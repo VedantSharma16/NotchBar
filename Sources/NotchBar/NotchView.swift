@@ -36,6 +36,12 @@ struct NotchView: View {
         .spring(response: 0.45, dampingFraction: 0.74)
     }
 
+    /// Closing is tighter and bounce-free: overshoot reads as playful on
+    /// the way out but as jitter when snapping back into the notch.
+    private var closeSpring: Animation {
+        .spring(response: 0.32, dampingFraction: 0.92)
+    }
+
     private var island: some View {
         ZStack(alignment: .top) {
             islandShape
@@ -46,7 +52,14 @@ struct NotchView: View {
                 backgroundLayer
                     .frame(width: islandSize.width, height: islandSize.height)
                     .clipShape(islandShape)
-                    .transition(.opacity)
+                    // Fade in gently once the shape is opening, but vanish
+                    // almost instantly on collapse: if it fades on the same
+                    // spring as the shrinking shape, it hangs visibly past
+                    // the island's edge for a few frames.
+                    .transition(.asymmetric(
+                        insertion: .opacity.animation(.easeOut(duration: 0.25).delay(0.05)),
+                        removal: .opacity.animation(.easeOut(duration: 0.06))
+                    ))
             }
 
             if state.isExpanded {
@@ -62,7 +75,7 @@ struct NotchView: View {
             }
         }
         .frame(width: islandSize.width, height: islandSize.height)
-        .animation(openSpring, value: state.isExpanded)
+        .animation(state.isExpanded ? openSpring : closeSpring, value: state.isExpanded)
         .animation(openSpring, value: state.hasActivity)
         .animation(openSpring, value: state.rightWingWidth)
         .animation(openSpring, value: state.showsActivityBanner)
@@ -539,10 +552,10 @@ struct PulsingSymbol: View {
 /// display refresh and burn CPU all day for a 15-pt widget.
 struct EqualizerBars: View {
     private let maxHeights: [CGFloat] = [11, 15, 8]
-    private let rates: [Double] = [2.6, 3.4, 2.1]
+    private let rates: [Double] = [3.25, 4.25, 2.6]
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 10.0)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 15.0)) { context in
             let time: Double = context.date.timeIntervalSinceReferenceDate
             HStack(alignment: .bottom, spacing: 2) {
                 ForEach(0..<3, id: \.self) { index in
