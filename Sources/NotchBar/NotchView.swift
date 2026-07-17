@@ -552,10 +552,10 @@ struct PulsingSymbol: View {
 /// display refresh and burn CPU all day for a 15-pt widget.
 struct EqualizerBars: View {
     private let maxHeights: [CGFloat] = [11, 15, 8]
-    private let rates: [Double] = [3.25, 4.25, 2.6]
+    private let rates: [Double] = [4.2, 5.5, 3.4]
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 15.0)) { context in
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
             let time: Double = context.date.timeIntervalSinceReferenceDate
             HStack(alignment: .bottom, spacing: 2) {
                 ForEach(0..<3, id: \.self) { index in
