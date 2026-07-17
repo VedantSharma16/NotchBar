@@ -111,10 +111,12 @@ struct NotchView: View {
                 // feels alive without demanding attention (or battery —
                 // it only exists while expanded).
                 TimelineView(.animation(minimumInterval: 1.0 / 15.0)) { context in
-                    let t = context.date.timeIntervalSinceReferenceDate
+                    let time: Double = context.date.timeIntervalSinceReferenceDate
+                    let hue: Double = sin(time / 7.0) * 10.0
+                    let zoom: CGFloat = 1.08 + 0.05 * CGFloat(sin(time / 9.0))
                     NotchBackground.presetGradient(name)
-                        .hueRotation(.degrees(sin(t / 7) * 10))
-                        .scaleEffect(1.08 + 0.05 * sin(t / 9))
+                        .hueRotation(.degrees(hue))
+                        .scaleEffect(zoom)
                 }
             } else if let image = state.customBackgroundImage {
                 Image(nsImage: image)
@@ -517,11 +519,12 @@ struct PulsingSymbol: View {
     var body: some View {
         if pulses {
             TimelineView(.animation(minimumInterval: 1.0 / 20.0)) { context in
-                let t = context.date.timeIntervalSinceReferenceDate
+                let time: Double = context.date.timeIntervalSinceReferenceDate
+                let level: Double = 0.6 + 0.4 * sin(time * 4.0)
                 Image(systemName: symbol)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(tint)
-                    .opacity(0.6 + 0.4 * sin(t * 4))
+                    .opacity(level)
             }
         } else {
             Image(systemName: symbol)
@@ -540,16 +543,24 @@ struct EqualizerBars: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 10.0)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
+            let time: Double = context.date.timeIntervalSinceReferenceDate
             HStack(alignment: .bottom, spacing: 2) {
                 ForEach(0..<3, id: \.self) { index in
-                    let wave = (sin(t * rates[index] + Double(index) * 1.7) + 1) / 2
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(.white.opacity(0.85))
-                        .frame(width: 2.5, height: 3 + (maxHeights[index] - 3) * wave)
+                    bar(index: index, time: time)
                 }
             }
             .frame(height: 15, alignment: .bottom)
         }
+    }
+
+    // Kept deliberately simple and explicitly typed: one big inline
+    // expression here times out the type-checker on older Swift toolchains.
+    private func bar(index: Int, time: Double) -> some View {
+        let phase: Double = time * rates[index] + Double(index) * 1.7
+        let wave: CGFloat = CGFloat((sin(phase) + 1.0) / 2.0)
+        let height: CGFloat = 3.0 + (maxHeights[index] - 3.0) * wave
+        return RoundedRectangle(cornerRadius: 1)
+            .fill(.white.opacity(0.85))
+            .frame(width: 2.5, height: height)
     }
 }
